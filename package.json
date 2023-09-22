@@ -32,6 +32,5 @@
       "packages/plugin-truffle/test",
       "examples/*"
     ]
-  },
-  "packageManager": "yarn@3.6.3"
+  }
 }
