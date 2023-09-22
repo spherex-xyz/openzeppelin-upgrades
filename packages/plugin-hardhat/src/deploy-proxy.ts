@@ -1,25 +1,25 @@
+import type { Contract, ContractFactory } from 'ethers';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
-import type { ContractFactory, Contract } from 'ethers';
 
 import {
-  Manifest,
-  logWarning,
-  ProxyDeployment,
   BeaconProxyUnsupportedError,
+  Manifest,
+  ProxyDeployment,
   RemoteDeploymentId,
+  logWarning,
 } from '@openzeppelin/upgrades-core';
 
+import { enableDefender } from './defender/utils';
 import {
   DeployProxyOptions,
-  deploy,
-  getProxyFactory,
-  getTransparentUpgradeableProxyFactory,
   DeployTransaction,
+  deploy,
   deployProxyImpl,
   getInitializerData,
+  getProtectedProxyFactory,
   getSigner,
+  getTransparentUpgradeableProxyFactory,
 } from './utils';
-import { enableDefender } from './defender/utils';
 import { getContractInstance } from './utils/contract-instance';
 
 export interface DeployFunction {
@@ -66,8 +66,8 @@ export function makeDeployProxy(hre: HardhatRuntimeEnvironment, defenderModule: 
       }
 
       case 'uups': {
-        const ProxyFactory = await getProxyFactory(hre, signer);
-        proxyDeployment = Object.assign({ kind }, await deploy(hre, opts, ProxyFactory, impl, data));
+        const ProtectedProxyFactory = await getProtectedProxyFactory(hre, signer);
+        proxyDeployment = Object.assign({ kind }, await deploy(hre, opts, ProtectedProxyFactory, impl, data));
         break;
       }
 
