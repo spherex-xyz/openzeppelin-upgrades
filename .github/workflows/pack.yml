@@ -3,6 +3,7 @@ name: Pack
 on:
   push:
     branches: [master, add-manifest-migration]
+  workflow_dispatch:
 
 jobs:
   pack:
