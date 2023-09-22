@@ -2635,6 +2635,10 @@
   dependencies:
     tslib "^2.5.0"
 
+"@spherex-xyz/contracts@https://github.com/spherex-xyz/spherex-protect-contracts.git#proxy-protect-package":
+  version "1.0.0"
+  resolved "https://github.com/spherex-xyz/spherex-protect-contracts.git#fef3843b48ade8c9446c8ecc48b6a5c421feb08b"
+
 "@szmarczak/http-timer@^4.0.5":
   version "4.0.6"
   resolved "https://registry.yarnpkg.com/@szmarczak/http-timer/-/http-timer-4.0.6.tgz#b4a914bb62e7c272d4e5989fe4440f812ab1d807"

@@ -1,8 +1,8 @@
 {
-  "name": "@openzeppelin/hardhat-upgrades",
+  "name": "@spherex-xyz/hardhat-upgrades",
   "version": "2.2.1",
   "description": "",
-  "repository": "https://github.com/OpenZeppelin/openzeppelin-upgrades/tree/master/packages/plugin-hardhat",
+  "repository": "https://github.com/spherex-xyz/openzeppelin-upgrades/tree/master/packages/plugin-hardhat",
   "license": "MIT",
   "main": "dist/index.js",
   "files": [
@@ -39,6 +39,7 @@
     "@openzeppelin/defender-base-client": "^1.48.0",
     "@openzeppelin/platform-deploy-client": "^0.10.0",
     "@openzeppelin/upgrades-core": "^1.27.0",
+    "@spherex-xyz/contracts": "https://github.com/spherex-xyz/spherex-protect-contracts.git#proxy-protect-package",
     "chalk": "^4.1.0",
     "debug": "^4.1.1",
     "ethereumjs-util": "^7.1.5",
