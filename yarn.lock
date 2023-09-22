@@ -2376,6 +2376,20 @@
     lodash "^4.17.19"
     node-fetch "^2.6.0"
 
+"@openzeppelin/upgrades-core@^1.26.2", "@openzeppelin/upgrades-core@^1.27.0":
+  version "1.29.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.29.0.tgz#dfa76fbbbc60967dece58d2bc40560a9d3fbac27"
+  integrity sha512-csZvAMNqUJjMDNBPbaXcV9Nlo4oagMD/HkOBHTpYbBTpnmUhwPVHOMv+Rl0RatBdLHuGc6hw88h80k5PWkEeWw==
+  dependencies:
+    cbor "^9.0.0"
+    chalk "^4.1.0"
+    compare-versions "^6.0.0"
+    debug "^4.1.1"
+    ethereumjs-util "^7.0.3"
+    minimist "^1.2.7"
+    proper-lockfile "^4.1.1"
+    solidity-ast "^0.4.26"
+
 "@parcel/watcher@2.0.4":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@parcel/watcher/-/watcher-2.0.4.tgz#f300fef4cc38008ff4b8c29d92588eced3ce014b"
@@ -2635,9 +2649,10 @@
   dependencies:
     tslib "^2.5.0"
 
-"@spherex-xyz/contracts@https://github.com/spherex-xyz/spherex-protect-contracts.git#proxy-protect-package":
-  version "1.0.0"
-  resolved "https://github.com/spherex-xyz/spherex-protect-contracts.git#fef3843b48ade8c9446c8ecc48b6a5c421feb08b"
+"@spherex-xyz/contracts@^1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@spherex-xyz/contracts/-/contracts-1.0.1.tgz#1502deef869686792981db8fc539133390df8cbf"
+  integrity sha512-zgY5EH5R7rhkYsGAU4a8FiHN9STwK+4vyJP0s0VZbs4fqLxvFUNF1rdq1X2vvQ6GIANED8aF9sGRk/Log62dcg==
 
 "@szmarczak/http-timer@^4.0.5":
   version "4.0.6"
