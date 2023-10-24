@@ -21,6 +21,18 @@ test('happy path - call with args', async t => {
   t.is(await greeter.greet(), 'Called during upgrade');
 });
 
+test('sub proxy', async t => {
+  const { Greeter, GreeterV2 } = t.context;
+
+  const greeter = await upgrades.deploySubProxy(Greeter, ['Hello, Hardhat!']);
+
+  t.is(await greeter.greet(), 'Hello, Hardhat!');
+
+  await upgrades.upgradeSubProxy(greeter, GreeterV2, {
+    call: { fn: 'setGreeting', args: ['Called during upgrade'] },
+  });
+});
+
 test('happy path - call without args', async t => {
   const { Greeter, GreeterV2 } = t.context;
 
