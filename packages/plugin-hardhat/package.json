@@ -1,6 +1,6 @@
 {
   "name": "@spherex-xyz/hardhat-upgrades",
-  "version": "2.2.1",
+  "version": "4.2.2",
   "description": "",
   "repository": "https://github.com/spherex-xyz/openzeppelin-upgrades/tree/master/packages/plugin-hardhat",
   "license": "MIT",
