@@ -11,6 +11,7 @@ import {
   getContractAddress,
   ContractAddressOrInstance,
   getSigner,
+  getProtectedUUPSFactory,
 } from './utils';
 import { disableDefender } from './defender/utils';
 import { attach } from './utils/ethers';
@@ -79,4 +80,37 @@ function encodeCall(factory: ContractFactory, call: UpgradeProxyOptions['call'])
   }
 
   return factory.interface.encodeFunctionData(call.fn, call.args ?? []);
+}
+
+export function makeUpgradeSubProxy(hre: HardhatRuntimeEnvironment, defenderModule: boolean): UpgradeFunction {
+  return async function upgradeSubProxy(proxy, ImplFactory, opts: UpgradeProxyOptions = {}) {
+    const signer = getSigner(ImplFactory.runner);
+    const proxyAddress = await getContractAddress(proxy);
+
+    let imp = await ImplFactory.deploy();
+    await imp.waitForDeployment();
+    console.log(`Deploy New Imp done @ ${await imp.getAddress()}`);
+
+    let MiddlewareProxy = await getProtectedUUPSFactory(hre, signer);
+    const middleware = attach(MiddlewareProxy, proxyAddress);
+
+    if (opts && opts.call) {
+      let fn;
+      let args;
+      if (typeof opts.call === 'string') {
+        fn = opts.call;
+        args = [];
+      } else {
+        fn = opts.call.fn;
+        args = opts.call.args;
+      }
+      const call_data = imp.interface.encodeFunctionData(fn, args);
+      await middleware.subUpgradeToAndCall(await imp.getAddress(), call_data);
+    } else {
+      await middleware.subUpgradeTo(await imp.getAddress());
+    }
+
+    const inst = attach(ImplFactory, proxyAddress);
+    return inst;
+  };
 }

@@ -5,6 +5,8 @@ import ProxyAdmin from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/cont
 import ITransparentUpgradeableProxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol/ITransparentUpgradeableProxy.json';
 import TransparentUpgradeableProxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json';
 import ProtectedERC1967Proxy from '@spherex-xyz/contracts/artifacts/src/ProtectedProxies/ProtectedERC1967Proxy.sol/ProtectedERC1967Proxy.json';
+import SphereXProtectedSubProxy from '@spherex-xyz/contracts/artifacts/src/SphereXProtectedSubProxy.sol/SphereXProtectedSubProxy.json';
+import ProtectedUUPSUpgradeable from '@spherex-xyz/contracts/artifacts/src/ProtectedProxies/ProtectedUUPSUpgradeable.sol/ProtectedUUPSUpgradeable.json';
 import { ContractFactory, Signer } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
@@ -17,6 +19,20 @@ export async function getProtectedProxyFactory(
   signer?: Signer,
 ): Promise<ContractFactory> {
   return hre.ethers.getContractFactory(ProtectedERC1967Proxy.abi, ProtectedERC1967Proxy.bytecode, signer);
+}
+
+export async function getProtectedSubProxyFactory(
+  hre: HardhatRuntimeEnvironment,
+  signer?: Signer,
+): Promise<ContractFactory> {
+  return hre.ethers.getContractFactory(SphereXProtectedSubProxy.abi, SphereXProtectedSubProxy.bytecode, signer);
+}
+
+export async function getProtectedUUPSFactory(
+  hre: HardhatRuntimeEnvironment,
+  signer?: Signer,
+): Promise<ContractFactory> {
+  return hre.ethers.getContractFactory(ProtectedUUPSUpgradeable.abi, ProtectedUUPSUpgradeable.bytecode, signer);
 }
 
 export async function getTransparentUpgradeableProxyFactory(

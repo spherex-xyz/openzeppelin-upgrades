@@ -38,7 +38,9 @@ import {
 
 export interface HardhatUpgrades {
   deployProxy: DeployFunction;
+  deploySubProxy: DeployFunction;
   upgradeProxy: UpgradeFunction;
+  upgradeSubProxy: UpgradeFunction;
   validateImplementation: ValidateImplementationFunction;
   validateUpgrade: ValidateUpgradeFunction;
   deployImplementation: DeployImplementationFunction;
@@ -177,7 +179,9 @@ function makeFunctions(hre: HardhatRuntimeEnvironment, defender: boolean) {
     getBeaconAddress,
   } = require('@openzeppelin/upgrades-core');
   const { makeDeployProxy } = require('./deploy-proxy');
+  const { makeDeploySubProxy } = require('./deploy-proxy');
   const { makeUpgradeProxy } = require('./upgrade-proxy');
+  const { makeUpgradeSubProxy } = require('./upgrade-proxy');
   const { makeValidateImplementation } = require('./validate-implementation');
   const { makeValidateUpgrade } = require('./validate-upgrade');
   const { makeDeployImplementation } = require('./deploy-implementation');
@@ -191,7 +195,9 @@ function makeFunctions(hre: HardhatRuntimeEnvironment, defender: boolean) {
   return {
     silenceWarnings,
     deployProxy: makeDeployProxy(hre, defender),
+    deploySubProxy: makeDeploySubProxy(hre, defender),
     upgradeProxy: makeUpgradeProxy(hre, defender), // block on defender
+    upgradeSubProxy: makeUpgradeSubProxy(hre, defender), // block on defender
     validateImplementation: makeValidateImplementation(hre),
     validateUpgrade: makeValidateUpgrade(hre),
     deployImplementation: makeDeployImplementation(hre, defender),
