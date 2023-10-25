@@ -38,7 +38,9 @@ import {
 
 export interface HardhatUpgrades {
   deployProxy: DeployFunction;
+  deploySubProxy: DeployFunction;
   upgradeProxy: UpgradeFunction;
+  upgradeSubProxy: UpgradeFunction;
   validateImplementation: ValidateImplementationFunction;
   validateUpgrade: ValidateUpgradeFunction;
   deployImplementation: DeployImplementationFunction;
