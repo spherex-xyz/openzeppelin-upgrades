@@ -93,7 +93,6 @@ export function makeDeployProxy(hre: HardhatRuntimeEnvironment, defenderModule: 
 export function makeDeploySubProxy(hre: HardhatRuntimeEnvironment, defenderModule: boolean): DeployFunction {
   return async function deploySubProxy(ImplFactory: ContractFactory, args: unknown[] | DeployProxyOptions = []) {
     const signer = getSigner(ImplFactory.runner);
-    const deployProxy = makeDeployProxy(hre, false);
 
     if (!Array.isArray(args)) {
       args = [];
@@ -106,28 +105,23 @@ export function makeDeploySubProxy(hre: HardhatRuntimeEnvironment, defenderModul
     let MiddlewareProxy = await getProtectedSubProxyFactory(hre, signer);
     const contract_init_data = imp.interface.encodeFunctionData('initialize', args);
 
-    let proxy = await deployProxy(
-      MiddlewareProxy,
-      [
-        '0x0000000000000000000000000000000000000000',
-        '0x0000000000000000000000000000000000000000',
-        '0x0000000000000000000000000000000000000000',
-        await imp.getAddress(),
-        contract_init_data,
-      ],
-      {
-        initializer: 'initialize',
-        kind: 'uups',
-        unsafeAllow: ['delegatecall'],
-      },
-    );
+    let middlewareProxy = await MiddlewareProxy.deploy();
+    await middlewareProxy.waitForDeployment();
+    console.log(`Deploy Middleware Proxy done @ ${await middlewareProxy.getAddress()}`);
 
-    await new Promise(f => setTimeout(f, 3000));
-    await proxy.deployed();
+    const middleware_init_data = middlewareProxy.interface.encodeFunctionData('initialize', [
+      '0x0000000000000000000000000000000000000000',
+      '0x0000000000000000000000000000000000000000',
+      '0x0000000000000000000000000000000000000000',
+      await imp.getAddress(),
+      contract_init_data,
+    ]);
+    let Proxy = await getProxyFactory(hre, signer);
+    let proxy = await Proxy.deploy(await middlewareProxy.getAddress(), middleware_init_data);
+    await proxy.waitForDeployment();
 
-    proxy = new hre.ethers.Contract(await proxy.getAddress(), ImplFactory.interface, signer);
-    console.log('Deploy Treasury Middleware Proxy done @ ' + (await proxy.getSubImplementation()));
-    console.log(`Deploy Proxy done @ ${proxy.address}`);
-    return proxy;
+    let isnt = new hre.ethers.Contract(await proxy.getAddress(), ImplFactory.interface, signer);
+    console.log(`Deploy Proxy done @ ${isnt.getAddress()}`);
+    return isnt;
   };
 }
