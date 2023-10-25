@@ -85,14 +85,15 @@ function encodeCall(factory: ContractFactory, call: UpgradeProxyOptions['call'])
 export function makeUpgradeSubProxy(hre: HardhatRuntimeEnvironment, defenderModule: boolean): UpgradeFunction {
   return async function upgradeSubProxy(proxy, ImplFactory, opts: UpgradeProxyOptions = {}) {
     const signer = getSigner(ImplFactory.runner);
-
     const proxyAddress = await getContractAddress(proxy);
+
     let imp = await ImplFactory.deploy();
     await imp.waitForDeployment();
-    console.log(`Deploy Imp done @ ${await imp.getAddress()}`);
+    console.log(`Deploy New Imp done @ ${await imp.getAddress()}`);
 
     let MiddlewareProxy = await getProtectedUUPSFactory(hre, signer);
     const middleware = attach(MiddlewareProxy, proxyAddress);
+
     if (opts && opts.call) {
       let fn;
       let args;

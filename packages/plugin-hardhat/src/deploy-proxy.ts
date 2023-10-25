@@ -110,18 +110,19 @@ export function makeDeploySubProxy(hre: HardhatRuntimeEnvironment, defenderModul
     console.log(`Deploy Middleware Proxy done @ ${await middlewareProxy.getAddress()}`);
 
     const middleware_init_data = middlewareProxy.interface.encodeFunctionData('initialize', [
-      '0x0000000000000000000000000000000000000000',
+      await signer?.getAddress(), // SphereX Admin
       '0x0000000000000000000000000000000000000000',
       '0x0000000000000000000000000000000000000000',
       await imp.getAddress(),
       contract_init_data,
     ]);
+
     let Proxy = await getProxyFactory(hre, signer);
     let proxy = await Proxy.deploy(await middlewareProxy.getAddress(), middleware_init_data);
     await proxy.waitForDeployment();
 
     let isnt = new hre.ethers.Contract(await proxy.getAddress(), ImplFactory.interface, signer);
-    console.log(`Deploy Proxy done @ ${isnt.getAddress()}`);
+    console.log(`Deploy Proxy done @ ${await isnt.getAddress()}`);
     return isnt;
   };
 }
