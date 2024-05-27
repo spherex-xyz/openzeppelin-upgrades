@@ -1,7 +1,7 @@
 const test = require('ava');
 
 const hre = require('hardhat');
-const { getProxyAdminFactory } = require('@openzeppelin/hardhat-upgrades/dist/utils/factories.js');
+const { getProxyAdminFactory } = require('@spherex-xyz/hardhat-upgrades/dist/utils/factories.js');
 
 const { ethers, upgrades } = hre;
 

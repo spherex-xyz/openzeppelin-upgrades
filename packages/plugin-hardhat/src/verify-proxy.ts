@@ -79,10 +79,10 @@ export async function verify(args: any, hre: HardhatRuntimeEnvironment, runSuper
       () =>
         'Import the plugins in the following order in hardhat.config.js:\n' +
         '  require("@nomicfoundation/hardhat-verify");\n' +
-        '  require("@openzeppelin/hardhat-upgrades");\n' +
+        '  require("@spherex-xyz/hardhat-upgrades");\n' +
         'Or if you are using TypeScript, import the plugins in the following order in hardhat.config.ts:\n' +
         '  import "@nomicfoundation/hardhat-verify";\n' +
-        '  import "@openzeppelin/hardhat-upgrades";\n',
+        '  import "@spherex-xyz/hardhat-upgrades";\n',
     );
   }
 
