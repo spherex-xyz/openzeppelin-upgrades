@@ -1,0 +1,1 @@
+include::foundry/api/pages/api-foundry-upgrades.adoc[]

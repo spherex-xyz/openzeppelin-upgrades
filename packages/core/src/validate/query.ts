@@ -93,9 +93,11 @@ export function unfoldStorageLayout(runData: ValidationRunData, fullContractName
       solcVersion,
       storage: c.layout.storage,
       types: c.layout.types,
+      namespaces: c.layout.namespaces,
     };
   } else {
-    const layout: StorageLayout = { solcVersion, storage: [], types: {} };
+    // Namespaces are pre-flattened
+    const layout: StorageLayout = { solcVersion, storage: [], types: {}, namespaces: c.layout.namespaces };
     for (const name of [fullContractName].concat(c.inherit)) {
       layout.storage.unshift(...runData[name].layout.storage);
       Object.assign(layout.types, runData[name].layout.types);
@@ -192,7 +194,7 @@ export function isUpgradeSafe(data: ValidationData, version: Version): boolean {
 
 export function inferUUPS(runValidation: ValidationRunData, fullContractName: string): boolean {
   const methods = getAllMethods(runValidation, fullContractName);
-  return methods.includes(upgradeToSignature);
+  return methods.includes(upgradeToSignature) || methods.includes(upgradeToAndCallSignature);
 }
 
 export function inferProxyKind(data: ValidationData, version: Version): ProxyDeployment['kind'] {

@@ -69,7 +69,7 @@ export class UpgradeableContractReport implements Report {
  */
 export function getContractReports(
   sourceContracts: SourceContract[],
-  opts: ValidateUpgradeSafetyOptions,
+  opts: Required<ValidateUpgradeSafetyOptions>,
   specifiedContracts?: SpecifiedContracts,
 ) {
   const upgradeableContractReports: UpgradeableContractReport[] = [];
@@ -83,7 +83,11 @@ export function getContractReports(
       sourceContracts,
       specifiedContracts?.reference,
     );
-    if (specifiedContracts !== undefined || upgradeabilityAssessment.upgradeable) {
+    if (opts.requireReference && upgradeabilityAssessment.referenceContract === undefined) {
+      throw new Error(
+        `The contract ${sourceContract.fullyQualifiedName} does not specify what contract it upgrades from. Add the \`@custom:oz-upgrades-from <REFERENCE_CONTRACT>\` annotation to the contract, or include the reference contract name when running the validate command or function.`,
+      );
+    } else if (specifiedContracts !== undefined || upgradeabilityAssessment.upgradeable) {
       const reference = upgradeabilityAssessment.referenceContract;
       const kind = upgradeabilityAssessment.uups ? 'uups' : 'transparent';
       const report = getUpgradeableContractReport(sourceContract, reference, { ...opts, kind: kind });
@@ -102,7 +106,7 @@ function getUpgradeableContractReport(
 ): UpgradeableContractReport | undefined {
   let version;
   try {
-    version = getContractVersion(contract.validationData, contract.name);
+    version = getContractVersion(contract.validationData, contract.fullyQualifiedName);
   } catch (e: any) {
     if (e.message.endsWith('is abstract')) {
       // Skip abstract upgradeable contracts - they will be validated as part of their caller contracts
@@ -122,7 +126,7 @@ function getUpgradeableContractReport(
   if (opts.unsafeSkipStorageCheck !== true && referenceContract !== undefined) {
     const layout = getStorageLayout(contract.validationData, version);
 
-    const referenceVersion = getContractVersion(referenceContract.validationData, referenceContract.name);
+    const referenceVersion = getContractVersion(referenceContract.validationData, referenceContract.fullyQualifiedName);
     const referenceLayout = getStorageLayout(referenceContract.validationData, referenceVersion);
 
     reference = referenceContract.fullyQualifiedName;

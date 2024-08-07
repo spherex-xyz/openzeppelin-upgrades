@@ -6,12 +6,7 @@ import { subtask, extendEnvironment, extendConfig } from 'hardhat/config';
 import { TASK_COMPILE_SOLIDITY, TASK_COMPILE_SOLIDITY_COMPILE } from 'hardhat/builtin-tasks/task-names';
 import { lazyObject } from 'hardhat/plugins';
 import { HardhatConfig, HardhatRuntimeEnvironment } from 'hardhat/types';
-import {
-  getImplementationAddressFromBeacon,
-  logWarning,
-  silenceWarnings,
-  SolcInput,
-} from '@openzeppelin/upgrades-core';
+import type { silenceWarnings, SolcInput, SolcOutput } from '@openzeppelin/upgrades-core';
 import type { DeployFunction } from './deploy-proxy';
 import type { PrepareUpgradeFunction } from './prepare-upgrade';
 import type { UpgradeFunction } from './upgrade-proxy';
@@ -19,22 +14,16 @@ import type { DeployBeaconFunction } from './deploy-beacon';
 import type { DeployBeaconProxyFunction } from './deploy-beacon-proxy';
 import type { UpgradeBeaconFunction } from './upgrade-beacon';
 import type { ForceImportFunction } from './force-import';
-import type { ChangeAdminFunction, TransferProxyAdminOwnershipFunction, GetInstanceFunction } from './admin';
+import type { ChangeAdminFunction, TransferProxyAdminOwnershipFunction } from './admin';
 import type { ValidateImplementationFunction } from './validate-implementation';
 import type { ValidateUpgradeFunction } from './validate-upgrade';
 import type { DeployImplementationFunction } from './deploy-implementation';
-import { DeployAdminFunction, makeDeployProxyAdmin } from './deploy-proxy-admin';
 import type { DeployContractFunction } from './deploy-contract';
 import type { ProposeUpgradeWithApprovalFunction } from './defender/propose-upgrade-with-approval';
-import type { GetDefaultApprovalProcessFunction } from './defender/get-default-approval-process';
-import { ProposeUpgradeFunction } from './defender-v1/propose-upgrade';
-import {
-  VerifyDeployFunction,
-  VerifyDeployWithUploadedArtifactFunction,
-  GetVerifyDeployArtifactFunction,
-  GetVerifyDeployBuildInfoFunction,
-  GetBytecodeDigestFunction,
-} from './defender-v1/verify-deployment';
+import type {
+  GetDeployApprovalProcessFunction,
+  GetUpgradeApprovalProcessFunction,
+} from './defender/get-approval-process';
 
 export interface HardhatUpgrades {
   deployProxy: DeployFunction;
@@ -46,11 +35,9 @@ export interface HardhatUpgrades {
   deployBeacon: DeployBeaconFunction;
   deployBeaconProxy: DeployBeaconProxyFunction;
   upgradeBeacon: UpgradeBeaconFunction;
-  deployProxyAdmin: DeployAdminFunction;
   forceImport: ForceImportFunction;
   silenceWarnings: typeof silenceWarnings;
   admin: {
-    getInstance: GetInstanceFunction;
     changeProxyAdmin: ChangeAdminFunction;
     transferProxyAdminOwnership: TransferProxyAdminOwnershipFunction;
   };
@@ -64,24 +51,21 @@ export interface HardhatUpgrades {
   };
 }
 
-export interface DefenderV1HardhatUpgrades {
-  proposeUpgrade: ProposeUpgradeFunction;
-  verifyDeployment: VerifyDeployFunction;
-  verifyDeploymentWithUploadedArtifact: VerifyDeployWithUploadedArtifactFunction;
-  getDeploymentArtifact: GetVerifyDeployArtifactFunction;
-  getDeploymentBuildInfo: GetVerifyDeployBuildInfoFunction;
-  getBytecodeDigest: GetBytecodeDigestFunction;
-}
-
-export interface DefenderHardhatUpgrades extends HardhatUpgrades, DefenderV1HardhatUpgrades {
+export interface DefenderHardhatUpgrades extends HardhatUpgrades {
   deployContract: DeployContractFunction;
   proposeUpgradeWithApproval: ProposeUpgradeWithApprovalFunction;
-  getDefaultApprovalProcess: GetDefaultApprovalProcessFunction;
+  getDeployApprovalProcess: GetDeployApprovalProcessFunction;
+  getUpgradeApprovalProcess: GetUpgradeApprovalProcessFunction;
+  /**
+   * @deprecated Use `getUpgradeApprovalProcess` instead.
+   */
+  getDefaultApprovalProcess: GetUpgradeApprovalProcessFunction;
 }
 
 interface RunCompilerArgs {
   input: SolcInput;
   solcVersion: string;
+  quiet: boolean;
 }
 
 subtask(TASK_COMPILE_SOLIDITY, async (args: { force: boolean }, hre, runSuper) => {
@@ -101,7 +85,9 @@ subtask(TASK_COMPILE_SOLIDITY, async (args: { force: boolean }, hre, runSuper) =
 });
 
 subtask(TASK_COMPILE_SOLIDITY_COMPILE, async (args: RunCompilerArgs, hre, runSuper) => {
-  const { validate, solcInputOutputDecoder } = await import('@openzeppelin/upgrades-core');
+  const { isNamespaceSupported, validate, solcInputOutputDecoder, makeNamespacedInput } = await import(
+    '@openzeppelin/upgrades-core'
+  );
   const { writeValidations } = await import('./utils/validations');
 
   // TODO: patch input
@@ -110,12 +96,43 @@ subtask(TASK_COMPILE_SOLIDITY_COMPILE, async (args: RunCompilerArgs, hre, runSup
   const { isFullSolcOutput } = await import('./utils/is-full-solc-output');
   if (isFullSolcOutput(output)) {
     const decodeSrc = solcInputOutputDecoder(args.input, output);
-    const validations = validate(output, decodeSrc, args.solcVersion);
+
+    let namespacedOutput = undefined;
+    if (isNamespaceSupported(args.solcVersion)) {
+      const namespacedInput = makeNamespacedInput(args.input, output, args.solcVersion);
+      namespacedOutput = (await runSuper({ ...args, quiet: true, input: namespacedInput })).output;
+      await checkNamespacedCompileErrors(namespacedOutput);
+    }
+
+    const validations = validate(output, decodeSrc, args.solcVersion, args.input, namespacedOutput);
     await writeValidations(hre, validations);
   }
 
   return { output, solcBuild };
 });
+
+/**
+ * Checks for compile errors in the modified contracts for namespaced storage.
+ * If errors are found, throws an error with the compile error messages.
+ */
+async function checkNamespacedCompileErrors(namespacedOutput: SolcOutput) {
+  const errors = [];
+  if (namespacedOutput.errors !== undefined) {
+    for (const error of namespacedOutput.errors) {
+      if (error.severity === 'error') {
+        errors.push(error.formattedMessage);
+      }
+    }
+  }
+  if (errors.length > 0) {
+    const { UpgradesError } = await import('@openzeppelin/upgrades-core');
+    throw new UpgradesError(
+      `Failed to compile modified contracts for namespaced storage:\n\n${errors.join('\n')}`,
+      () =>
+        'Please report this at https://zpl.in/upgrades/report. If possible, include the source code for the contracts mentioned in the errors above.',
+    );
+  }
+}
 
 extendEnvironment(hre => {
   hre.upgrades = lazyObject((): HardhatUpgrades => {
@@ -131,6 +148,7 @@ extendEnvironment(hre => {
 
 function warnOnHardhatDefender() {
   if (tryRequire('@openzeppelin/hardhat-defender', true)) {
+    const { logWarning } = require('@openzeppelin/upgrades-core');
     logWarning('The @openzeppelin/hardhat-defender package is deprecated.', [
       'Uninstall the @openzeppelin/hardhat-defender package.',
       'OpenZeppelin Defender integration is included as part of the Hardhat Upgrades plugin.',
@@ -175,6 +193,7 @@ function makeFunctions(hre: HardhatRuntimeEnvironment, defender: boolean) {
     getAdminAddress,
     getImplementationAddress,
     getBeaconAddress,
+    getImplementationAddressFromBeacon,
   } = require('@openzeppelin/upgrades-core');
   const { makeDeployProxy } = require('./deploy-proxy');
   const { makeUpgradeProxy } = require('./upgrade-proxy');
@@ -186,7 +205,7 @@ function makeFunctions(hre: HardhatRuntimeEnvironment, defender: boolean) {
   const { makeDeployBeaconProxy } = require('./deploy-beacon-proxy');
   const { makeUpgradeBeacon } = require('./upgrade-beacon');
   const { makeForceImport } = require('./force-import');
-  const { makeChangeProxyAdmin, makeTransferProxyAdminOwnership, makeGetInstanceFunction } = require('./admin');
+  const { makeChangeProxyAdmin, makeTransferProxyAdminOwnership } = require('./admin');
 
   return {
     silenceWarnings,
@@ -199,10 +218,8 @@ function makeFunctions(hre: HardhatRuntimeEnvironment, defender: boolean) {
     deployBeacon: makeDeployBeacon(hre, defender), // block on defender
     deployBeaconProxy: makeDeployBeaconProxy(hre, defender),
     upgradeBeacon: makeUpgradeBeacon(hre, defender), // block on defender
-    deployProxyAdmin: makeDeployProxyAdmin(hre, defender), // block on defender
     forceImport: makeForceImport(hre),
     admin: {
-      getInstance: makeGetInstanceFunction(hre),
       changeProxyAdmin: makeChangeProxyAdmin(hre, defender), // block on defender
       transferProxyAdminOwnership: makeTransferProxyAdminOwnership(hre, defender), // block on defender
     },
@@ -222,37 +239,20 @@ function makeUpgradesFunctions(hre: HardhatRuntimeEnvironment): HardhatUpgrades 
   return makeFunctions(hre, false);
 }
 
-function makeDefenderV1Functions(hre: HardhatRuntimeEnvironment): DefenderV1HardhatUpgrades {
-  const {
-    makeVerifyDeploy,
-    makeVerifyDeployWithUploadedArtifact,
-    makeGetVerifyDeployBuildInfo,
-    makeGetVerifyDeployArtifact,
-    makeGetBytecodeDigest,
-  } = require('./defender-v1/verify-deployment');
-  const { makeProposeUpgrade } = require('./defender-v1/propose-upgrade');
-
-  return {
-    proposeUpgrade: makeProposeUpgrade(hre),
-    verifyDeployment: makeVerifyDeploy(hre),
-    verifyDeploymentWithUploadedArtifact: makeVerifyDeployWithUploadedArtifact(hre),
-    getDeploymentArtifact: makeGetVerifyDeployArtifact(hre),
-    getDeploymentBuildInfo: makeGetVerifyDeployBuildInfo(hre),
-    getBytecodeDigest: makeGetBytecodeDigest(hre),
-  };
-}
-
 function makeDefenderFunctions(hre: HardhatRuntimeEnvironment): DefenderHardhatUpgrades {
   const { makeDeployContract } = require('./deploy-contract');
   const { makeProposeUpgradeWithApproval } = require('./defender/propose-upgrade-with-approval');
-  const { makeGetDefaultApprovalProcess } = require('./defender/get-default-approval-process');
+  const { makeGetDeployApprovalProcess, makeGetUpgradeApprovalProcess } = require('./defender/get-approval-process');
+
+  const getUpgradeApprovalProcess = makeGetUpgradeApprovalProcess(hre);
 
   return {
     ...makeFunctions(hre, true),
-    ...makeDefenderV1Functions(hre),
     deployContract: makeDeployContract(hre, true),
     proposeUpgradeWithApproval: makeProposeUpgradeWithApproval(hre, true),
-    getDefaultApprovalProcess: makeGetDefaultApprovalProcess(hre),
+    getDeployApprovalProcess: makeGetDeployApprovalProcess(hre),
+    getUpgradeApprovalProcess: getUpgradeApprovalProcess,
+    getDefaultApprovalProcess: getUpgradeApprovalProcess, // deprecated, is an alias for getUpgradeApprovalProcess
   };
 }
 

@@ -3,7 +3,12 @@ import { CompilerInput, CompilerOutputContract, HardhatRuntimeEnvironment } from
 
 import { parseFullyQualifiedName } from 'hardhat/utils/contract-names';
 
-import { DeploymentResponse, SourceCodeLicense } from '@openzeppelin/platform-deploy-client';
+import {
+  DeploymentResponse,
+  SourceCodeLicense,
+  DeployContractRequest,
+  DeployRequestLibraries,
+} from '@openzeppelin/defender-sdk-deploy-client';
 import {
   Deployment,
   RemoteDeploymentId,
@@ -11,27 +16,21 @@ import {
   UpgradesError,
 } from '@openzeppelin/upgrades-core';
 
-import artifactsBuildInfo from '@openzeppelin/upgrades-core/artifacts/build-info.json';
+import artifactsBuildInfo from '@openzeppelin/upgrades-core/artifacts/build-info-v5.json';
 
-import ERC1967Proxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol/ERC1967Proxy.json';
-import BeaconProxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol/BeaconProxy.json';
-import UpgradeableBeacon from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol/UpgradeableBeacon.json';
-import TransparentUpgradeableProxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json';
-import ProxyAdmin from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol/ProxyAdmin.json';
+import ERC1967Proxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/ERC1967/ERC1967Proxy.sol/ERC1967Proxy.json';
+import BeaconProxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/beacon/BeaconProxy.sol/BeaconProxy.json';
+import UpgradeableBeacon from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/beacon/UpgradeableBeacon.sol/UpgradeableBeacon.json';
+import TransparentUpgradeableProxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json';
 
-import { getNetwork, getDefenderClient } from './utils';
-import { DeployTransaction, DefenderDeployOptions, UpgradeOptions } from '../utils';
+import { getNetwork, parseTxOverrides } from './utils';
+import { DeployTransaction, DefenderDeployOptions, UpgradeOptions, EthersDeployOptions } from '../utils';
 import debug from '../utils/debug';
 import { getDeployData } from '../utils/deploy-impl';
 import { ContractSourceNotFoundError } from '@openzeppelin/upgrades-core';
+import { getDeployClient } from './client';
 
-const deployableProxyContracts = [
-  ERC1967Proxy,
-  BeaconProxy,
-  UpgradeableBeacon,
-  TransparentUpgradeableProxy,
-  ProxyAdmin,
-];
+const deployableProxyContracts = [ERC1967Proxy, BeaconProxy, UpgradeableBeacon, TransparentUpgradeableProxy];
 
 interface ReducedBuildInfo {
   _format: string;
@@ -48,6 +47,8 @@ interface ContractInfo {
   sourceName: string;
   contractName: string;
   buildInfo: ReducedBuildInfo;
+  libraries?: DeployRequestLibraries;
+  constructorBytecode: string;
 }
 
 type CompilerOutputWithMetadata = CompilerOutputContract & {
@@ -57,50 +58,94 @@ type CompilerOutputWithMetadata = CompilerOutputContract & {
 export async function defenderDeploy(
   hre: HardhatRuntimeEnvironment,
   factory: ContractFactory,
-  opts: UpgradeOptions & DefenderDeployOptions,
+  opts: UpgradeOptions & EthersDeployOptions & DefenderDeployOptions,
   ...args: unknown[]
 ): Promise<Required<Deployment & RemoteDeploymentId> & DeployTransaction> {
-  const client = getDefenderClient(hre);
+  const client = getDeployClient(hre);
 
-  const constructorArgs = [...args] as (string | number | boolean)[];
-  const contractInfo = await getContractInfo(hre, factory, { constructorArgs, ...opts });
+  // Override constructor arguments in options with the ones passed as arguments to this function.
+  // The ones in the options are for implementation contracts only, while this function
+  // can be used to deploy proxies as well.
+  const contractInfo = await getContractInfo(hre, factory, { ...opts, constructorArgs: args });
   const network = await getNetwork(hre);
   debug(`Network ${network}`);
 
   const verifySourceCode = opts.verifySourceCode ?? true;
   debug(`Verify source code: ${verifySourceCode}`);
 
-  let license: string | undefined = undefined;
-  if (verifySourceCode) {
-    license = getLicenseFromMetadata(contractInfo);
-    debug(`License type: ${license}`);
-  }
-
   if (opts.salt !== undefined) {
     debug(`Salt: ${opts.salt}`);
   }
 
+  if (opts.licenseType !== undefined) {
+    if (opts.verifySourceCode === false) {
+      throw new UpgradesError('The `licenseType` option cannot be used when the `verifySourceCode` option is `false`');
+    } else if (opts.skipLicenseType) {
+      throw new UpgradesError('The `licenseType` option cannot be used when the `skipLicenseType` option is `true`');
+    }
+  }
+
+  let licenseType: SourceCodeLicense | undefined = undefined;
+  if (verifySourceCode) {
+    if (opts.licenseType !== undefined) {
+      licenseType = opts.licenseType;
+      debug(`licenseType option: ${licenseType}`);
+    } else if (!opts.skipLicenseType) {
+      const spdxIdentifier = getSpdxLicenseIdentifier(contractInfo);
+      debug(`SPDX license identifier from metadata: ${spdxIdentifier}`);
+      if (spdxIdentifier !== undefined) {
+        licenseType = toLicenseType(spdxIdentifier, contractInfo);
+        debug(`licenseType inferred: ${licenseType}`);
+      }
+    }
+  }
+
+  const deploymentRequest: DeployContractRequest = {
+    contractName: contractInfo.contractName,
+    contractPath: contractInfo.sourceName,
+    network: network,
+    artifactPayload: JSON.stringify(contractInfo.buildInfo),
+    licenseType: licenseType,
+    constructorBytecode: contractInfo.constructorBytecode,
+    verifySourceCode: verifySourceCode,
+    relayerId: opts.relayerId,
+    salt: opts.salt,
+    createFactoryAddress: opts.createFactoryAddress,
+    txOverrides: parseTxOverrides(opts.txOverrides),
+    libraries: contractInfo.libraries,
+  };
+
   let deploymentResponse: DeploymentResponse;
   try {
-    deploymentResponse = await client.Deployment.deploy({
-      contractName: contractInfo.contractName,
-      contractPath: contractInfo.sourceName,
-      network: network,
-      artifactPayload: JSON.stringify(contractInfo.buildInfo),
-      licenseType: license as SourceCodeLicense | undefined, // cast without validation but catch error from API below
-      constructorInputs: constructorArgs,
-      verifySourceCode: verifySourceCode,
-      relayerId: opts.relayerId,
-      salt: opts.salt,
-    });
+    deploymentResponse = await client.deployContract(deploymentRequest);
   } catch (e: any) {
     if (e.response?.data?.message?.includes('licenseType should be equal to one of the allowed values')) {
       throw new UpgradesError(
-        `License type ${license} is not a valid SPDX license identifier for block explorer verification.`,
-        () => 'Specify a valid SPDX-License-Identifier in your contract.',
+        `The licenseType option "${licenseType}" is not valid for block explorer verification.`,
+        () =>
+          'See https://etherscan.io/contract-license-types for supported values and use the string found in brackets, e.g. "MIT"',
       );
     } else {
       throw e;
+    }
+  }
+
+  // For EOA or Safe deployments, address and/or txHash are not known until the deployment is completed.
+  // In this case, prompt the user to submit the deployment in Defender, and wait for it to be completed.
+  if (deploymentResponse.address === undefined || deploymentResponse.txHash === undefined) {
+    console.log(
+      `ACTION REQUIRED: Go to https://defender.openzeppelin.com/v2/#/deploy to submit the pending deployment.`,
+    );
+    console.log(`The process will continue automatically when the pending deployment is completed.`);
+    console.log(
+      `Waiting for pending deployment of contract ${contractInfo.contractName} with deployment id ${deploymentResponse.deploymentId}...`,
+    );
+
+    const pollInterval = opts.pollingInterval ?? 5e3;
+    while (deploymentResponse.address === undefined || deploymentResponse.txHash === undefined) {
+      debug(`Waiting for deployment id ${deploymentResponse.deploymentId} to return address and txHash...`);
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      deploymentResponse = await client.getDeployedContract(deploymentResponse.deploymentId);
     }
   }
 
@@ -117,14 +162,33 @@ export async function defenderDeploy(
 async function getContractInfo(
   hre: HardhatRuntimeEnvironment,
   factory: ethers.ContractFactory,
-  opts: UpgradeOptions,
+  opts: UpgradeOptions & Required<Pick<UpgradeOptions, 'constructorArgs'>>,
 ): Promise<ContractInfo> {
-  let fullContractName;
+  let fullContractName, runValidation;
+  let libraries: DeployRequestLibraries | undefined;
+  let constructorBytecode: string;
   try {
-    // Get fully qualified contract name from validations
+    // Get fully qualified contract name and link references from validations
     const deployData = await getDeployData(hre, factory, opts);
-    [fullContractName] = getContractNameAndRunValidation(deployData.validations, deployData.version);
+    constructorBytecode = deployData.encodedArgs;
+    [fullContractName, runValidation] = getContractNameAndRunValidation(deployData.validations, deployData.version);
     debug(`Contract ${fullContractName}`);
+
+    // Get externally linked libraries
+    const linkReferences = runValidation[fullContractName].linkReferences;
+    for (const ref in linkReferences) {
+      const linkedBytes = factory.bytecode.slice(2);
+
+      const start = linkReferences[ref].start * 2;
+      const length = linkReferences[ref].length * 2;
+
+      const linkFullyQualifiedName: `${string}:${string}` = `${linkReferences[ref].src}:${linkReferences[ref].name}`;
+      const linkAddress = `0x${linkedBytes.substring(start, start + length)}`;
+
+      libraries ??= {};
+      libraries[linkFullyQualifiedName] = linkAddress;
+    }
+    debug(`Libraries: ${JSON.stringify(libraries, null, 2)}`);
   } catch (e) {
     if (e instanceof ContractSourceNotFoundError) {
       // Proxy contracts would not be found in the validations, so try to get these from the plugin's precompiled artifacts.
@@ -134,7 +198,12 @@ async function getContractInfo(
           const contractName = artifact.contractName;
           const buildInfo = artifactsBuildInfo;
           debug(`Proxy contract ${sourceName}:${contractName}`);
-          return { sourceName, contractName, buildInfo };
+          return {
+            sourceName,
+            contractName,
+            buildInfo,
+            constructorBytecode: factory.interface.encodeDeploy(opts.constructorArgs),
+          };
         }
       }
     }
@@ -151,13 +220,14 @@ async function getContractInfo(
       () => `Run \`npx hardhat compile\``,
     );
   }
-  return { sourceName, contractName, buildInfo };
+
+  return { sourceName, contractName, buildInfo, libraries, constructorBytecode };
 }
 
 /**
- * Get the license type from the contract metadata without validating its validity, except converts undefined or UNLICENSED to None.
+ * Get the SPDX license identifier from the contract metadata without validating it.
  */
-function getLicenseFromMetadata(contractInfo: ContractInfo): string {
+function getSpdxLicenseIdentifier(contractInfo: ContractInfo): string | undefined {
   const compilerOutput: CompilerOutputWithMetadata =
     contractInfo.buildInfo.output.contracts[contractInfo.sourceName][contractInfo.contractName];
 
@@ -171,11 +241,52 @@ function getLicenseFromMetadata(contractInfo: ContractInfo): string {
 
   const metadata = JSON.parse(metadataString);
 
-  const license: string = metadata.sources[contractInfo.sourceName].license;
-  if (license === undefined || license === 'UNLICENSED') {
-    // UNLICENSED means no license according to solidity docs
-    return 'None';
-  } else {
-    return license;
+  return metadata.sources[contractInfo.sourceName].license;
+}
+
+/**
+ * Infers a SourceCodeLicense from an SPDX license identifier.
+ */
+function toLicenseType(spdxIdentifier: string, contractInfo: ContractInfo): SourceCodeLicense {
+  switch (spdxIdentifier) {
+    case 'UNLICENSED':
+      return 'None';
+    case 'Unlicense':
+      return 'Unlicense';
+    case 'MIT':
+      return 'MIT';
+    case 'GPL-2.0-only':
+    case 'GPL-2.0-or-later':
+      return 'GNU GPLv2';
+    case 'GPL-3.0-only':
+    case 'GPL-3.0-or-later':
+      return 'GNU GPLv3';
+    case 'LGPL-2.1-only':
+    case 'LGPL-2.1-or-later':
+      return 'GNU LGPLv2.1';
+    case 'LGPL-3.0-only':
+    case 'LGPL-3.0-or-later':
+      return 'GNU LGPLv3';
+    case 'BSD-2-Clause':
+      return 'BSD-2-Clause';
+    case 'BSD-3-Clause':
+      return 'BSD-3-Clause';
+    case 'MPL-2.0':
+      return 'MPL-2.0';
+    case 'OSL-3.0':
+      return 'OSL-3.0';
+    case 'Apache-2.0':
+      return 'Apache-2.0';
+    case 'AGPL-3.0-only':
+    case 'AGPL-3.0-or-later':
+      return 'GNU AGPLv3';
+    case 'BUSL-1.1':
+      return 'BSL 1.1';
+    default:
+      throw new UpgradesError(
+        `SPDX license identifier ${spdxIdentifier} in ${contractInfo.sourceName} does not look like a supported license for block explorer verification.`,
+        () =>
+          `Use the \`licenseType\` option to specify a license type, or set the \`skipLicenseType\` option to \`true\` to skip.`,
+      );
   }
 }

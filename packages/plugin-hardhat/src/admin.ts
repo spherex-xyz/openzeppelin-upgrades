@@ -2,12 +2,14 @@ import chalk from 'chalk';
 import type { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { Manifest, getAdminAddress } from '@openzeppelin/upgrades-core';
 import { Contract, Signer } from 'ethers';
-import { EthersDeployOptions, getProxyAdminFactory } from './utils';
+import { EthersDeployOptions, attachProxyAdminV4 } from './utils';
 import { disableDefender } from './defender/utils';
-import { attach } from './utils/ethers';
 
 const SUCCESS_CHECK = chalk.green('✔') + ' ';
-const FAILURE_CROSS = chalk.red('✘') + ' ';
+
+type TransferProxyAdminOwnershipOptions = {
+  silent?: boolean;
+};
 
 export type ChangeAdminFunction = (
   proxyAddress: string,
@@ -16,9 +18,10 @@ export type ChangeAdminFunction = (
   opts?: EthersDeployOptions,
 ) => Promise<void>;
 export type TransferProxyAdminOwnershipFunction = (
+  proxyAddress: string,
   newOwner: string,
   signer?: Signer,
-  opts?: EthersDeployOptions,
+  opts?: TransferProxyAdminOwnershipOptions & EthersDeployOptions,
 ) => Promise<void>;
 export type GetInstanceFunction = (signer?: Signer) => Promise<Contract>;
 
@@ -32,14 +35,11 @@ export function makeChangeProxyAdmin(hre: HardhatRuntimeEnvironment, defenderMod
     disableDefender(hre, defenderModule, {}, changeProxyAdmin.name);
 
     const proxyAdminAddress = await getAdminAddress(hre.network.provider, proxyAddress);
+    // Only compatible with v4 admins
+    const admin = await attachProxyAdminV4(hre, proxyAdminAddress, signer);
 
-    if (proxyAdminAddress !== newAdmin) {
-      const AdminFactory = await getProxyAdminFactory(hre, signer);
-      const admin = attach(AdminFactory, proxyAdminAddress);
-
-      const overrides = opts.txOverrides ? [opts.txOverrides] : [];
-      await admin.changeProxyAdmin(proxyAddress, newAdmin, ...overrides);
-    }
+    const overrides = opts.txOverrides ? [opts.txOverrides] : [];
+    await admin.changeProxyAdmin(proxyAddress, newAdmin, ...overrides);
   };
 }
 
@@ -47,42 +47,39 @@ export function makeTransferProxyAdminOwnership(
   hre: HardhatRuntimeEnvironment,
   defenderModule: boolean,
 ): TransferProxyAdminOwnershipFunction {
-  return async function transferProxyAdminOwnership(newOwner: string, signer?: Signer, opts: EthersDeployOptions = {}) {
+  return async function transferProxyAdminOwnership(
+    proxyAddress: string,
+    newOwner: string,
+    signer?: Signer,
+    opts: TransferProxyAdminOwnershipOptions & EthersDeployOptions = {},
+  ) {
     disableDefender(hre, defenderModule, {}, transferProxyAdminOwnership.name);
 
-    const admin = await getManifestAdmin(hre, signer);
+    const proxyAdminAddress = await getAdminAddress(hre.network.provider, proxyAddress);
+    // Compatible with both v4 and v5 admins since they both have transferOwnership
+    const admin = await attachProxyAdminV4(hre, proxyAdminAddress, signer);
 
     const overrides = opts.txOverrides ? [opts.txOverrides] : [];
     await admin.transferOwnership(newOwner, ...overrides);
 
-    const { provider } = hre.network;
-    const manifest = await Manifest.forNetwork(provider);
-    const { proxies } = await manifest.read();
-    for (const { address, kind } of proxies) {
-      if ((await admin.getAddress()) == (await getAdminAddress(provider, address))) {
-        console.log(SUCCESS_CHECK + `${address} (${kind}) proxy ownership transfered through admin proxy`);
-      } else {
-        console.log(FAILURE_CROSS + `${address} (${kind}) proxy ownership not affected by admin proxy`);
+    if (!opts.silent) {
+      const { provider } = hre.network;
+      const manifest = await Manifest.forNetwork(provider);
+      const { proxies } = await manifest.read();
+      const adminAddress = await admin.getAddress();
+
+      const affected = [];
+      for (const proxy of proxies) {
+        const controller = await getAdminAddress(provider, proxy.address);
+        if (controller === adminAddress) {
+          affected.push(proxy);
+        }
+      }
+
+      if (affected.length > 0) {
+        console.log(SUCCESS_CHECK + `${affected.length} proxies ownership transferred through proxy admin`);
+        affected.forEach(proxy => console.log(`    - ${proxy.address} (${proxy.kind})`));
       }
     }
   };
-}
-
-export function makeGetInstanceFunction(hre: HardhatRuntimeEnvironment): GetInstanceFunction {
-  return async function getInstance(signer?: Signer) {
-    return await getManifestAdmin(hre, signer);
-  };
-}
-
-export async function getManifestAdmin(hre: HardhatRuntimeEnvironment, signer?: Signer): Promise<Contract> {
-  const manifest = await Manifest.forNetwork(hre.network.provider);
-  const manifestAdmin = await manifest.getAdmin();
-  const proxyAdminAddress = manifestAdmin?.address;
-
-  if (proxyAdminAddress === undefined) {
-    throw new Error('No ProxyAdmin was found in the network manifest');
-  }
-
-  const AdminFactory = await getProxyAdminFactory(hre, signer);
-  return attach(AdminFactory, proxyAdminAddress);
 }

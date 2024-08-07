@@ -53,7 +53,12 @@ export {
   NoContractImportError,
   ValidateUpdateRequiresKindError,
   PrepareUpgradeRequiresKindError,
+  InitialOwnerUnsupportedKindError,
   assertNotProxy,
 } from './usage-error';
 
 export { ValidateUpgradeSafetyOptions, validateUpgradeSafety, ProjectReport, ReferenceContractNotFound } from './cli';
+
+export { getUpgradeInterfaceVersion } from './upgrade-interface-version';
+export { makeNamespacedInput } from './utils/make-namespaced';
+export { isNamespaceSupported } from './storage/namespace';

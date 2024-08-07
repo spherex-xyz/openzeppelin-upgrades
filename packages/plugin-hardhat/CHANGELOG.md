@@ -1,5 +1,113 @@
 # Changelog
 
+## 3.2.1 (2024-07-31)
+
+- Fix Hardhat compile error when public variables are used to implement interface functions. ([#1055](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1055))
+- Remove non-struct NatSpec from Hardhat compilation step for namespaced storage layout validations. ([#1051](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1051))
+
+## 3.2.0 (2024-06-24)
+
+- **Breaking change**: Remove `defender.proposeUpgrade` from Defender legacy. Defender users should use `defender.proposeUpgradeWithApproval` instead. ([#1041](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1041))
+
+## 3.1.1 (2024-06-03)
+
+- Defender: Fix proxy deployments when using `constructorArgs` option, support arbitrary constructor arguments. ([#1029](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1029))
+
+## 3.1.0 (2024-04-22)
+
+- Defender: Fix handling of license types for block explorer verification, support `licenseType` and `skipLicenseType` options. ([#1013](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1013))
+
+### Breaking changes
+- When deploying through Defender, if your contract does not have an SPDX license identifier, the verified source code on Etherscan will no longer show any license type.
+  - If you want the license type to appear as "None", either set your contract to have `// SPDX-License-Identifier: UNLICENSED` according to [Solidity docs](https://docs.soliditylang.org/en/latest/layout-of-source-files.html#spdx-license-identifier), or set the `licenseType` option to `"None"`.
+
+## 3.0.5 (2024-03-08)
+
+- Simplify console logging for `admin.transferProxyAdminOwnership`. ([#978](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/978))
+- Support private networks and forked networks with Defender. ([#989](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/989))
+
+## 3.0.4 (2024-02-27)
+
+- Support externally linked libraries for Defender deployments. ([#960](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/960))
+
+## 3.0.3 (2024-02-06)
+
+- Support Defender deployments using EOA or Safe. ([#967](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/967))
+
+## 3.0.2 (2024-01-09)
+
+- Support proxy verification on Snowtrace. ([#954](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/954))
+
+## 3.0.1 (2023-12-20)
+
+- Update dependency on undici. ([#948](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/948))
+- Update Defender SDK, support `txOverrides` option with Defender. ([#951](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/951))
+
+## 3.0.0 (2023-12-11)
+
+- Deploy proxies from OpenZeppelin Contracts 5.0. ([#919](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/919))
+- Support `initialOwner` option when deploying a transparent proxy or beacon. If not set, the externally owned account used during deployment will be the default owner for the transparent proxy's admin or the beacon, respectively.
+- Update optional peer dependency on `@nomicfoundation/hardhat-verify` to v2.0.0 or higher. ([#937](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/937))
+  - **Note**: [Fully verifying proxies](https://docs.openzeppelin.com/upgrades-plugins/1.x/api-hardhat-upgrades#verify) is only supported with Etherscan at the moment. The Hardhat Upgrades plugin does not currently assist with Sourcify verification for proxies.
+
+### Breaking changes
+- `deployProxy`, `deployBeacon`, `deployBeaconProxy`: Deploys proxy contracts from [OpenZeppelin Contracts 5.0](https://docs.openzeppelin.com/contracts/5.x/api/proxy).
+- `deployProxy`:
+  - Deploying a transparent proxy automatically causes a new proxy admin contract to be deployed along with the proxy.
+  - New transparent proxy deployments no longer use an existing proxy admin, even if one was previously recorded in the network file.
+  - New proxy admins are no longer recorded in the network file.
+- `deployProxyAdmin`: Removed, since proxy admins are deployed automatically by transparent proxies.
+- `admin.changeProxyAdmin`: Not supported with admins or proxies from OpenZeppelin Contracts 5.0. Only supported for previously deployed admins and proxies from OpenZeppelin Contracts 4.x or below.
+- `admin.transferProxyAdminOwnership`: This function no longer uses the proxy admin from the network file. It now requires a `proxyAddress` argument to be passed in.
+- `@nomicfoundation/hardhat-verify` v1.x and `@nomicfoundation/hardhat-toolbox` v3.x are no longer supported with this plugin. If you are using these packages, update them to `@nomicfoundation/hardhat-verify` v2.x and `@nomicfoundation/hardhat-toolbox` v4.x.
+
+## 2.5.0 (2023-12-04)
+
+- Add `defender.getDeployApprovalProcess` and `defender.getUpgradeApprovalProcess` functions. ([#934](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/934))
+- Deprecate `defender.getDefaultApprovalProcess` function. This function is equivalent to `defender.getUpgradeApprovalProcess`.
+
+**Note**: OpenZeppelin Defender deployments is in beta and its functionality is subject to change.
+
+## 2.4.3 (2023-11-28)
+
+- Bump dependency on `@openzeppelin/upgrades-core`. ([#930](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/930))
+
+## 2.4.2 (2023-11-28)
+
+- Fix `upgradeProxy` from an implementation that has a fallback function and is not using OpenZeppelin Contracts 5.0. ([#926](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/926))
+
+## 2.4.1 (2023-11-14)
+
+- Update Defender SDK. ([#924](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/924))
+- Throw error if not using a relayer for deployments, until other types of deployments are supported.
+
+**Note**: OpenZeppelin Defender deployments is in beta and its functionality is subject to change.
+
+## 2.4.0 (2023-11-13)
+
+- Add `createFactoryAddress` option for Defender deployments. ([#920](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/920))
+
+**Note**: OpenZeppelin Defender deployments is in beta and its functionality is subject to change.
+
+## 2.3.3 (2023-10-12)
+
+- Update OpenZeppelin Defender deployments to use Defender SDK ([#888](https://github.com/OpenZeppelin/openzeppelin-upgrades/issues/888))
+
+## 2.3.2 (2023-10-11)
+
+- Fix Hardhat compile error when using Solidity 0.5.x. ([#892](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/892))
+
+## 2.3.1 (2023-09-28)
+
+- Check for non-zero admin address when importing transparent proxy. ([#887](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/887))
+
+## 2.3.0 (2023-09-27)
+
+- Support new upgrade interface in OpenZeppelin Contracts 5.0. ([#883](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/883))
+- Support importing and upgrading 5.0 proxies.
+  - **Note**: Deploying 5.0 proxies is not supported yet.
+- Add validations for namespaced storage layout. ([#876](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/876))
+
 ## 2.2.1 (2023-08-18)
 
 - Allow using proxy with different admin address than manifest. ([#859](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/859))

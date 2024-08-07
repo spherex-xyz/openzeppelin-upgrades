@@ -1,4 +1,5 @@
 export interface EthereumProvider {
+  send(method: 'anvil_metadata', params: []): Promise<HardhatMetadata>;
   send(method: 'hardhat_metadata', params: []): Promise<HardhatMetadata>;
   send(method: 'web3_clientVersion', params: []): Promise<string>;
   send(method: 'net_version', params: []): Promise<string>;
@@ -12,13 +13,14 @@ export interface EthereumProvider {
   send(method: string, params: unknown[]): Promise<unknown>;
 }
 
-interface HardhatMetadata {
+export interface HardhatMetadata {
+  clientVersion: string;
   chainId: number;
   instanceId: string;
   forkedNetwork?: {
     // The chainId of the network that is being forked
     chainId: number;
-  };
+  } | null;
 }
 
 interface EthereumTransaction {
@@ -55,6 +57,13 @@ export async function getClientVersion(provider: EthereumProvider): Promise<stri
  */
 export async function getHardhatMetadata(provider: EthereumProvider): Promise<HardhatMetadata> {
   return provider.send('hardhat_metadata', []);
+}
+
+/**
+ * Anvil could have anvil_metadata, for which hardhat_metadata is an alias.
+ */
+export async function getAnvilMetadata(provider: EthereumProvider): Promise<HardhatMetadata> {
+  return provider.send('anvil_metadata', []);
 }
 
 export async function getStorageAt(
@@ -126,7 +135,8 @@ export const networkNames: { [chainId in number]?: string } = Object.freeze({
   97: 'bsc-testnet',
   137: 'polygon',
   420: 'optimism-goerli',
-  80001: 'polygon-mumbai',
+  8453: 'base',
+  17000: 'holesky',
   42161: 'arbitrum-one',
   42170: 'arbitrum-nova',
   421613: 'arbitrum-goerli',
@@ -134,7 +144,10 @@ export const networkNames: { [chainId in number]?: string } = Object.freeze({
   43114: 'avalanche',
   42220: 'celo',
   44787: 'celo-alfajores',
+  80001: 'polygon-mumbai',
+  84532: 'base-sepolia',
   11155111: 'sepolia',
+  11155420: 'op-sepolia',
 });
 
 export async function isDevelopmentNetwork(provider: EthereumProvider): Promise<boolean> {

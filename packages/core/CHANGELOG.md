@@ -1,5 +1,97 @@
 # Changelog
 
+## 1.35.0 (2024-07-31)
+
+- Fix Hardhat compile error when public variables are used to implement interface functions. ([#1055](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1055))
+- Remove non-struct NatSpec from Hardhat compilation step for namespaced storage layout validations. ([#1051](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1051))
+
+## 1.34.4 (2024-07-22)
+
+- Fix Hardhat compile error when return parameter names are documented as param. ([#1050](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1050))
+
+## 1.34.3 (2024-07-19)
+
+- Fix Hardhat compile error when multiple return parameters are documented. ([#1048](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1048))
+
+## 1.34.2 (2024-07-18)
+
+- Fix Hardhat compile error when constants have references to other constants. ([#1046](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1046))
+
+## 1.34.1 (2024-06-18)
+
+- Fix unexpected validation error when function parameter has internal function pointer. ([#1038](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1038))
+
+## 1.34.0 (2024-06-12)
+
+- Fix storage layout comparison for function types, disallow internal functions in storage. ([#1032](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1032))
+
+## 1.33.1 (2024-04-25)
+
+- Fix Hardhat compile error when variable has whitespace before semicolon. ([#1020](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1020))
+
+## 1.33.0 (2024-04-24)
+
+- Enable changing default network files directory with environment variable. ([#1011](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1011))
+
+## 1.32.6 (2024-04-16)
+
+- This plugin is now compiled with TypeScript v5. ([#760](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/760))
+- Fix Hardhat compile error when referencing a constant within a struct definition. ([#1009](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/1009))
+
+## 1.32.5 (2024-02-21)
+
+- Add support for Holesky testnet to manifest file names. ([#974](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/974))
+
+## 1.32.4 (2024-01-30)
+
+- Add support for OP Sepolia to manifest file names. ([#963](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/963))
+- Add support for Base networks to manifest file names. ([#965](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/965))
+- Fix error when renaming network file and using a separate filesystem. ([#964](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/964))
+
+## 1.32.3 (2024-01-16)
+
+- CLI: Improve checks for build info file settings. ([#958](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/958))
+
+## 1.32.2 (2023-12-21)
+
+- Fix manifest error when connecting to an Anvil dev network. ([#950](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/950))
+
+## 1.32.1 (2023-12-14)
+
+- CLI: Fix ambiguous name error when passing in fully qualified contract names. ([#944](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/944))
+
+## 1.32.0 (2023-12-11)
+
+- Support deploying proxies from OpenZeppelin Contracts 5.0. ([#919](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/919))
+- Fix address clash when redeploying implementation. ([#939](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/939))
+
+## 1.31.3 (2023-11-28)
+
+- Fix Hardhat compile errors when contracts have overloaded functions or standalone NatSpec documentation. ([#918](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/918))
+
+## 1.31.2 (2023-11-28)
+
+- Fix `upgradeProxy` in Hardhat from an implementation that has a fallback function and is not using OpenZeppelin Contracts 5.0. ([#926](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/926))
+
+## 1.31.1 (2023-11-01)
+
+- CLI: Throw error if `--requireReference` and `--unsafeSkipStorageCheck` are both enabled. ([#913](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/913))
+
+## 1.31.0 (2023-10-23)
+
+- CLI: Add `--requireReference` option. ([#900](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/900))
+- CLI: Simplify summary message when using `--contract`. ([#905](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/905))
+
+## 1.30.1 (2023-10-11)
+
+- Fix Hardhat compile error when using Solidity 0.5.x. ([#892](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/892))
+
+## 1.30.0 (2023-09-27)
+
+- Support new upgrade interface in OpenZeppelin Contracts 5.0. ([#883](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/883))
+- Add validations for namespaced storage layout. ([#876](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/876))
+- Deprecate low-level API. Use [CLI or high-level API](https://docs.openzeppelin.com/upgrades-plugins/1.x/api-core) instead.
+
 ## 1.29.0 (2023-09-19)
 
 - Support implementations with upgradeTo or upgradeToAndCall. ([#880](https://github.com/OpenZeppelin/openzeppelin-upgrades/pull/880))

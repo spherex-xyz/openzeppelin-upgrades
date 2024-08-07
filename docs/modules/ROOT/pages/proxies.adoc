@@ -135,7 +135,7 @@ The unstructured storage proxy mechanism doesn't safeguard against this situatio
 [[the-constructor-caveat]]
 == The Constructor Caveat
 
-In Solidity, code that is inside a constructor or part of a global variable declaration is not part of a deployed contract's runtime bytecode. This code is executed only once, when the contract instance is deployed. As a consequence of this, the code within a logic contract's constructor will never be executed in the context of the proxy's state. To rephrase, proxies are completely oblivious to the existence of constructors. It's simply as if they weren't there for the proxy.
+In Solidity, code that is inside a constructor or part of a global variable declaration is not part of a deployed contract's runtime bytecode. This code is executed only once, when the contract instance is deployed. As a consequence of this, the code within a logic contract's constructor will never be executed in the context of the proxy's state. To rephrase, proxies are completely oblivious to the storage trie changes that are performed by the constructor. It's simply as if they weren't there for the proxy. (Note that `immutable` variables can be reflected in a proxy contract but xref:faq.adoc#why-cant-i-use-immutable-variables[should be used with caution].)
 
 The problem is easily solved though. Logic contracts should move the code within the constructor to a regular 'initializer' function, and have this function be called whenever the proxy links to this logic contract. Special care needs to be taken with this initializer function so that it can only be called once, which is one of the properties of constructors in general programming.
 
@@ -185,7 +185,7 @@ Assuming a proxy with an `owner()` and an `upgradeTo()` function, that delegates
 |Other |returns erc20.owner() |fails |returns erc20.transfer()
 |==============================================================
 
-Fortunately, OpenZeppelin Upgrades accounts for this situation, and creates an intermediary ProxyAdmin contract that is in charge of all the proxies you create via the Upgrades plugins. Even if you call the `deploy` command from your node's default account, the ProxyAdmin contract will be the actual admin of all your proxies. This means that you will be able to interact with the proxies from any of your node's accounts, without having to worry about the nuances of the transparent proxy pattern. Only advanced users that create proxies from Solidity need to be aware of the transparent proxies pattern.
+Fortunately, OpenZeppelin Upgrades accounts for this situation, and uses an intermediary ProxyAdmin contract for each transparent proxy. Even if you call the `deploy` command from your node's default account, the ProxyAdmin contracts will be the actual admins of your transparent proxies. This means that you will be able to interact with the proxies from any of your node's accounts, without having to worry about the nuances of the transparent proxy pattern. Only advanced users that create proxies from Solidity need to be aware of the transparent proxies pattern.
 
 [[summary]]
 == Summary

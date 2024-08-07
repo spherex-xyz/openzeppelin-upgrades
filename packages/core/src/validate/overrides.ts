@@ -36,7 +36,7 @@ export interface StandaloneValidationOptions extends ProxyKindOption {
 }
 
 /**
- * Validation options in the context of an upgrade (with storage layout comparisions with a previous implementation).
+ * Validation options in the context of an upgrade (with storage layout comparisons with a previous implementation).
  */
 export interface ValidationOptions extends StandaloneValidationOptions {
   /**
@@ -75,6 +75,11 @@ export const ValidationErrorUnsafeMessages: Record<ValidationError['kind'], stri
     `You are using the \`unsafeAllow.missing-public-upgradeto\` flag with uups proxy.`,
     `Not having a public upgradeTo or upgradeToAndCall function in your implementation can break upgradeability.`,
     `Some implementation might check that onchain, and cause the upgrade to revert.`,
+  ],
+  'internal-function-storage': [
+    `You are using the \`unsafeAllow.internal-function-storage\` flag.`,
+    `Internal functions are code pointers which will no longer be valid after an upgrade.`,
+    `Make sure you reassign internal functions in storage variables during upgrades.`,
   ],
 };
 

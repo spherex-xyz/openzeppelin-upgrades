@@ -8,6 +8,7 @@ import {
   assertUpgradeSafe,
   ValidationOptions,
   RunValidation,
+  ValidationErrors,
 } from './validate';
 import { solcInputOutputDecoder } from './src-decoder';
 
@@ -23,6 +24,7 @@ test.before(async t => {
     'contracts/test/ValidationsNatspec.sol:HasNonEmptyConstructorNatspec1',
     'contracts/test/Proxiable.sol:ChildOfProxiable',
     'contracts/test/ValidationsUDVT.sol:ValidationsUDVT',
+    'contracts/test/ValidationsFunctionPointers.sol:InternalFunctionPointer',
   ];
 
   t.context.validation = {} as RunValidation;
@@ -38,11 +40,21 @@ test.before(async t => {
   }
 });
 
-function testValid(name: string, kind: ValidationOptions['kind'], valid: boolean) {
-  testOverride(name, kind, {}, valid);
+function testValid(name: string, kind: ValidationOptions['kind'], valid: boolean, numExpectedErrors?: number) {
+  testOverride(name, kind, {}, valid, numExpectedErrors);
 }
 
-function testOverride(name: string, kind: ValidationOptions['kind'], opts: ValidationOptions, valid: boolean) {
+function testOverride(
+  name: string,
+  kind: ValidationOptions['kind'],
+  opts: ValidationOptions,
+  valid: boolean,
+  numExpectedErrors?: number,
+) {
+  if (numExpectedErrors !== undefined && numExpectedErrors > 0 && valid) {
+    throw new Error('Cannot expect errors for a valid contract');
+  }
+
   const optKeys = Object.keys(opts);
   const describeOpts = optKeys.length > 0 ? '(' + optKeys.join(', ') + ')' : '';
   const testName = [valid ? 'accepts' : 'rejects', kind, name, describeOpts].join(' ');
@@ -52,7 +64,10 @@ function testOverride(name: string, kind: ValidationOptions['kind'], opts: Valid
     if (valid) {
       t.notThrows(assertUpgSafe);
     } else {
-      t.throws(assertUpgSafe);
+      const error = t.throws(assertUpgSafe) as ValidationErrors;
+      if (numExpectedErrors !== undefined) {
+        t.is(error.errors.length, numExpectedErrors);
+      }
     }
   });
 }
@@ -149,3 +164,31 @@ test('ambiguous name', t => {
       'contracts/test/ValidationsSameNameUnsafe.sol:SameName',
   );
 });
+
+testValid('NamespacedExternalFunctionPointer', 'transparent', true);
+testValid('NamespacedInternalFunctionPointer', 'transparent', false);
+testValid('NamespacedInternalFunctionPointerUsed', 'transparent', false, 1);
+testValid('StructInternalFunctionPointerUsed', 'transparent', false, 1);
+testValid('NonNamespacedInternalFunctionPointer', 'transparent', true);
+testValid('NamespacedImpliedInternalFunctionPointer', 'transparent', false);
+testOverride(
+  'NamespacedImpliedInternalFunctionPointer',
+  'transparent',
+  { unsafeAllow: ['internal-function-storage'] },
+  true,
+);
+
+testValid('UsesStandaloneStructInternalFn', 'transparent', false);
+testValid('NamespacedUsesStandaloneStructInternalFn', 'transparent', false);
+testValid('RecursiveStructInternalFn', 'transparent', false);
+testValid('MappingRecursiveStructInternalFn', 'transparent', false);
+testValid('ArrayRecursiveStructInternalFn', 'transparent', false);
+testValid('SelfRecursiveMappingStructInternalFn', 'transparent', false);
+testValid('SelfRecursiveArrayStructInternalFn', 'transparent', false);
+
+testValid('ExternalFunctionPointer', 'transparent', true);
+testValid('InternalFunctionPointer', 'transparent', false);
+testValid('ImpliedInternalFunctionPointer', 'transparent', false);
+testOverride('ImpliedInternalFunctionPointer', 'transparent', { unsafeAllow: ['internal-function-storage'] }, true);
+
+testValid('FunctionWithInternalFunctionPointer', 'transparent', true);

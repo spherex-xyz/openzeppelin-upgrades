@@ -15,6 +15,7 @@ test.afterEach(async () => {
 });
 
 const BUILD_INFO = {
+  solcVersion: '0.8.9',
   input: {
     language: 'Solidity',
     sources: {
@@ -41,6 +42,7 @@ const BUILD_INFO = {
 };
 
 const BUILD_INFO_2 = {
+  solcVersion: '0.8.9',
   input: {
     language: 'Solidity',
     sources: {
@@ -67,6 +69,7 @@ const BUILD_INFO_2 = {
 };
 
 const BUILD_INFO_NO_LAYOUT = {
+  solcVersion: '0.8.9',
   input: {
     language: 'Solidity',
     sources: {
@@ -87,6 +90,200 @@ const BUILD_INFO_NO_LAYOUT = {
       'mypath/MyContract.sol': {
         ast: {},
         id: 123,
+      },
+    },
+  },
+};
+
+const BUILD_INFO_INDIVIDUAL_NO_LAYOUT = {
+  solcVersion: '0.8.9',
+  input: {
+    language: 'Solidity',
+    sources: {
+      'mypath/MyContract.sol': {
+        content: 'contract MyContract {}',
+      },
+      'mypath/MyContractV2.sol': {
+        content: 'contract MyContractV2 {}',
+      },
+    },
+    settings: {
+      outputSelection: {
+        'mypath/MyContract.sol': {
+          '': ['ast'],
+          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'evm.methodIdentifiers', 'metadata'],
+        },
+        'mypath/MyContractV2.sol': {
+          '': ['ast'],
+          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'evm.methodIdentifiers', 'metadata'],
+        },
+      },
+    },
+  },
+  output: {
+    sources: {
+      'mypath/MyContract.sol': {
+        ast: {},
+        id: 123,
+      },
+      'mypath/MyContractV2.sol': {
+        ast: {},
+        id: 456,
+      },
+    },
+  },
+};
+
+const BUILD_INFO_INDIVIDUAL_HAS_LAYOUT = {
+  solcVersion: '0.8.9',
+  input: {
+    language: 'Solidity',
+    sources: {
+      'mypath/MyContract.sol': {
+        content: 'contract MyContract {}',
+      },
+      'mypath/MyContractV2.sol': {
+        content: 'contract MyContractV2 {}',
+      },
+    },
+    settings: {
+      outputSelection: {
+        'mypath/MyContract.sol': {
+          '': ['ast'],
+          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'evm.methodIdentifiers', 'metadata', 'storageLayout'],
+        },
+        'mypath/MyContractV2.sol': {
+          '': ['ast'],
+          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'evm.methodIdentifiers', 'metadata', 'storageLayout'],
+        },
+      },
+    },
+  },
+  output: {
+    sources: {
+      'mypath/MyContract.sol': {
+        ast: {},
+        id: 123,
+      },
+      'mypath/MyContractV2.sol': {
+        ast: {},
+        id: 456,
+      },
+    },
+  },
+};
+
+const BUILD_INFO_PARTIAL_LAYOUT = {
+  solcVersion: '0.8.9',
+  input: {
+    language: 'Solidity',
+    sources: {
+      'mypath/MyContract.sol': {
+        content: 'contract MyContract {}',
+      },
+      'mypath/MyContractV2.sol': {
+        content: 'contract MyContractV2 {}',
+      },
+    },
+    settings: {
+      outputSelection: {
+        'mypath/MyContract.sol': {
+          '': ['ast'],
+          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'evm.methodIdentifiers', 'metadata', 'storageLayout'],
+        },
+        'mypath/MyContractV2.sol': {
+          '': ['ast'],
+          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'evm.methodIdentifiers', 'metadata'],
+        },
+      },
+    },
+  },
+  output: {
+    sources: {
+      'mypath/MyContract.sol': {
+        ast: {},
+        id: 123,
+      },
+      'mypath/MyContractV2.sol': {
+        ast: {},
+        id: 456,
+      },
+    },
+  },
+};
+
+const BUILD_INFO_PARTIAL_COMPILE = {
+  solcVersion: '0.8.9',
+  input: {
+    language: 'Solidity',
+    sources: {
+      'mypath/MyContract.sol': {
+        content: 'contract MyContract {}',
+      },
+      'mypath/MyContractV2.sol': {
+        content: 'contract MyContractV2 {}',
+      },
+    },
+    settings: {
+      outputSelection: {
+        'mypath/MyContract.sol': {
+          '': ['ast'],
+          '*': ['abi', 'evm.bytecode', 'evm.deployedBytecode', 'evm.methodIdentifiers', 'metadata', 'storageLayout'],
+        },
+        'mypath/MyContractV2.sol': {
+          '': [],
+          '*': [],
+        },
+      },
+    },
+  },
+  output: {
+    sources: {
+      'mypath/MyContract.sol': {
+        ast: {},
+        id: 123,
+      },
+      'mypath/MyContractV2.sol': {
+        ast: {},
+        id: 456,
+      },
+    },
+  },
+};
+
+const BUILD_INFO_NO_OUTPUT_SELECTION = {
+  solcVersion: '0.8.9',
+  input: {
+    language: 'Solidity',
+    sources: {
+      'mypath/MyContract.sol': {
+        content: 'contract MyContract {}',
+      },
+      'mypath/MyContractV2.sol': {
+        content: 'contract MyContractV2 {}',
+      },
+    },
+    settings: {
+      outputSelection: {
+        'mypath/MyContract.sol': {
+          '*': [],
+        },
+        'mypath/MyContractV2.sol': {
+          '': [],
+          '*': [],
+        },
+      },
+    },
+  },
+  output: {
+    sources: {
+      'mypath/MyContract.sol': {
+        ast: {},
+        id: 123,
+      },
+      'mypath/MyContractV2.sol': {
+        ast: {},
+        id: 456,
       },
     },
   },
@@ -165,7 +362,7 @@ test.serial('invalid build info file', async t => {
 
   await fs.writeFile('invalid-build-info/invalid.json', JSON.stringify({ output: {} }));
   const error = await t.throwsAsync(getBuildInfoFiles('invalid-build-info'));
-  t.true(error?.message.includes('must contain Solidity compiler input and output'));
+  t.true(error?.message.includes('must contain Solidity compiler input, output, and solcVersion'));
 });
 
 test.serial('dir does not exist', async t => {
@@ -174,19 +371,72 @@ test.serial('dir does not exist', async t => {
 });
 
 test.serial('no build info files', async t => {
-  await fs.mkdir('empty-dir', { recursive: true });
-  await fs.writeFile('empty-dir/notjson.txt', 'abc');
+  const dir = 'empty-dir';
 
-  const error = await t.throwsAsync(getBuildInfoFiles('empty-dir'));
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${dir}/notjson.txt`, 'abc');
+
+  const error = await t.throwsAsync(getBuildInfoFiles(dir));
   t.true(error?.message.includes('does not contain any build info files'));
 });
 
 test.serial('no storage layout', async t => {
-  await fs.mkdir('no-storage-layout', { recursive: true });
-  await fs.writeFile('no-storage-layout/build-info.json', JSON.stringify(BUILD_INFO_NO_LAYOUT));
+  const dir = 'no-storage-layout';
 
-  const error = await t.throwsAsync(getBuildInfoFiles('no-storage-layout'));
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${dir}/build-info.json`, JSON.stringify(BUILD_INFO_NO_LAYOUT));
+
+  const error = await t.throwsAsync(getBuildInfoFiles(dir));
   t.true(error?.message.includes('does not contain storage layout'));
+});
+
+test.serial('individual output selections - no layout', async t => {
+  const dir = 'individual-no-layout';
+
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${dir}/build-info.json`, JSON.stringify(BUILD_INFO_INDIVIDUAL_NO_LAYOUT));
+
+  const error = await t.throwsAsync(getBuildInfoFiles(dir));
+  t.true(error?.message.includes('does not contain storage layout'));
+});
+
+test.serial('individual output selections - has layout', async t => {
+  const dir = 'individual-has-layout';
+
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${dir}/build-info.json`, JSON.stringify(BUILD_INFO_INDIVIDUAL_HAS_LAYOUT));
+
+  t.assert((await getBuildInfoFiles(dir)).length === 1);
+});
+
+test.serial('individual output selections - partial layout', async t => {
+  const dir = 'partial-layout';
+
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${dir}/build-info.json`, JSON.stringify(BUILD_INFO_PARTIAL_LAYOUT));
+
+  const error = await t.throwsAsync(getBuildInfoFiles(dir));
+  t.true(error?.message.includes('does not contain storage layout'));
+});
+
+test.serial('individual output selections - partial compile', async t => {
+  const dir = 'partial-compile';
+
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${dir}/build-info.json`, JSON.stringify(BUILD_INFO_PARTIAL_COMPILE));
+
+  const error = await t.throwsAsync(getBuildInfoFiles(dir));
+  t.true(error?.message.includes('is not from a full compilation'));
+});
+
+test.serial('no output selection', async t => {
+  const dir = 'no-output';
+
+  await fs.mkdir(dir, { recursive: true });
+  await fs.writeFile(`${dir}/build-info.json`, JSON.stringify(BUILD_INFO_NO_OUTPUT_SELECTION));
+
+  const error = await t.throwsAsync(getBuildInfoFiles(dir));
+  t.true(error?.message.includes('is not from a full compilation'));
 });
 
 function assertBuildInfoFiles(t: ExecutionContext, buildInfoFiles: BuildInfoFile[]) {
