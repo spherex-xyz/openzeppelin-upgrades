@@ -13,7 +13,7 @@ import {
 import {
   DeployProxyOptions,
   deploy,
-  getProxyFactory,
+  getProtectedProxyFactory,
   getTransparentUpgradeableProxyFactory,
   DeployTransaction,
   deployProxyImpl,
@@ -77,8 +77,8 @@ export function makeDeployProxy(hre: HardhatRuntimeEnvironment, defenderModule: 
           throw new InitialOwnerUnsupportedKindError(kind);
         }
 
-        const ProxyFactory = await getProxyFactory(hre, signer);
-        proxyDeployment = Object.assign({ kind }, await deploy(hre, opts, ProxyFactory, impl, data));
+        const ProtectedProxyFactory = await getProtectedProxyFactory(hre, signer);
+        proxyDeployment = Object.assign({ kind }, await deploy(hre, opts, ProtectedProxyFactory, impl, data));
         break;
       }
 

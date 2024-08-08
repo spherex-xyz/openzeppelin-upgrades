@@ -1,6 +1,7 @@
 import { ContractFactory, Signer } from 'ethers';
 
 import ERC1967Proxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/ERC1967/ERC1967Proxy.sol/ERC1967Proxy.json';
+import ProtectedERC1967Proxy from '@spherex-xyz/contracts/artifacts/src/ProtectedProxies/ProtectedERC1967Proxy.sol/ProtectedERC1967Proxy.json';
 import BeaconProxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/beacon/BeaconProxy.sol/BeaconProxy.json';
 import UpgradeableBeacon from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/beacon/UpgradeableBeacon.sol/UpgradeableBeacon.json';
 import TransparentUpgradeableProxy from '@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts-v5/proxy/transparent/TransparentUpgradeableProxy.sol/TransparentUpgradeableProxy.json';
@@ -9,6 +10,13 @@ import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 export async function getProxyFactory(hre: HardhatRuntimeEnvironment, signer?: Signer): Promise<ContractFactory> {
   return hre.ethers.getContractFactory(ERC1967Proxy.abi, ERC1967Proxy.bytecode, signer);
+}
+
+export async function getProtectedProxyFactory(
+  hre: HardhatRuntimeEnvironment,
+  signer?: Signer,
+): Promise<ContractFactory> {
+  return hre.ethers.getContractFactory(ProtectedERC1967Proxy.abi, ProtectedERC1967Proxy.bytecode, signer);
 }
 
 export async function getTransparentUpgradeableProxyFactory(
