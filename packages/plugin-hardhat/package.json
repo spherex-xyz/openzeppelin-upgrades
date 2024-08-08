@@ -1,8 +1,8 @@
 {
-  "name": "@openzeppelin/hardhat-upgrades",
+  "name": "@spherex-xyz/hardhat-upgrades",
   "version": "3.2.1",
   "description": "",
-  "repository": "https://github.com/OpenZeppelin/openzeppelin-upgrades/tree/master/packages/plugin-hardhat",
+  "repository": "https://github.com/spherex-xyz/openzeppelin-upgrades/tree/master/packages/plugin-hardhat",
   "license": "MIT",
   "main": "dist/index.js",
   "files": [
@@ -24,6 +24,7 @@
     "@nomicfoundation/hardhat-ethers": "^3.0.5",
     "@nomicfoundation/hardhat-verify": "^2.0.0",
     "@openzeppelin/contracts": "5.0.2",
+    "@spherex-xyz/contracts": "2.1.0",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@types/mocha": "^7.0.2",
     "ava": "^6.0.0",
